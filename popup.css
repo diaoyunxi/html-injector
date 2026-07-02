@@ -1,0 +1,232 @@
+/* HTML 注入器 - 弹窗样式 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 420px;
+  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: #f5f5f5;
+  color: #333;
+}
+
+.container {
+  padding: 16px;
+}
+
+/* 头部 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.version {
+  font-size: 12px;
+  color: #999;
+  background: #e8e8e8;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* 更新提示 */
+.update-notice {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #856404;
+}
+
+.update-notice a {
+  color: #0078d4;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.update-notice a:hover {
+  text-decoration: underline;
+}
+
+/* 开关行 */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #ccc;
+  border-radius: 26px;
+  transition: 0.3s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+input:checked + .slider {
+  background: #4CAF50;
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.switch-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+/* 代码输入区 */
+.code-section {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+  color: #333;
+}
+
+textarea:focus {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+/* 注入时机 */
+.timing-section {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  cursor: pointer;
+}
+
+/* 底部状态行 */
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.save-status {
+  font-size: 12px;
+  color: #4CAF50;
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+
+.save-status.show {
+  opacity: 1;
+}
+
+.btn-save {
+  padding: 6px 16px;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-save:hover {
+  background: #43A047;
+}
+
+.btn-save:active {
+  background: #388E3C;
+}

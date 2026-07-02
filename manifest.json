@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "HTML 注入器",
+  "version": "1.0.0",
+  "description": "在网页 head 中插入自定义 HTML 代码，支持全局开关和持久存储，无需在每个网站重新配置",
+  "permissions": ["storage", "notifications"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

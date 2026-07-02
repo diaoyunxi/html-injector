@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML 注入器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <img src="icons/icon48.png" alt="logo" class="logo">
+        <h1>HTML 注入器</h1>
+      </div>
+      <span class="version" id="version">v1.0.0</span>
+    </div>
+
+    <!-- 更新提示 -->
+    <div class="update-notice" id="updateNotice" style="display:none;">
+      <span>发现新版本，点击</span>
+      <a href="#" id="updateLink">下载更新</a>
+    </div>
+
+    <!-- 开关 -->
+    <div class="switch-row">
+      <label class="switch">
+        <input type="checkbox" id="enabledToggle">
+        <span class="slider"></span>
+      </label>
+      <span class="switch-label" id="switchLabel">已关闭</span>
+    </div>
+
+    <!-- HTML 代码输入 -->
+    <div class="code-section">
+      <label class="section-title" for="htmlCode">HTML 代码</label>
+      <textarea id="htmlCode" placeholder="在此输入要插入到 head 的 HTML 代码&#10;例如：&#10;<meta name=&quot;author&quot; content=&quot;my name&quot;>&#10;<style>body { background: #f0f0f0; }</style>&#10;<script>console.log('injected!');</script>" rows="10"></textarea>
+    </div>
+
+    <!-- 注入时机 -->
+    <div class="timing-section">
+      <label class="section-title">注入时机</label>
+      <div class="radio-group">
+        <label class="radio-label">
+          <input type="radio" name="timing" value="immediate" checked>
+          <span>立即注入（head 可用时尽快注入）</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="timing" value="dom_ready">
+          <span>DOM 就绪后注入（DOMContentLoaded）</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 保存状态 -->
+    <div class="status-row">
+      <span class="save-status" id="saveStatus"></span>
+      <button class="btn-save" id="saveBtn">手动保存</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
