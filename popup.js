@@ -17,9 +17,10 @@
   var updateNotice = document.getElementById("updateNotice");
   var updateLink = document.getElementById("updateLink");
   var timingRadios = document.getElementsByName("timing");
+  var zindexBoostCheckbox = document.getElementById("zindexBoost");
 
   // 当前扩展版本（与 manifest.json 保持一致）
-  var CURRENT_VERSION = "1.0.2";
+  var CURRENT_VERSION = "1.0.3";
 
   // 自动保存的防抖计时器
   var saveTimer = null;
@@ -55,6 +56,7 @@
         enabled: enabled,
         htmlCode: code,
         injectTiming: timing,
+        zindexBoost: zindexBoostCheckbox.checked,
       },
       function () {
         showSaveStatus("已自动保存");
@@ -82,7 +84,7 @@
    */
   function loadConfig() {
     chrome.storage.local.get(
-      ["enabled", "htmlCode", "injectTiming"],
+      ["enabled", "htmlCode", "injectTiming", "zindexBoost"],
       function (result) {
         enabledToggle.checked = result.enabled || false;
         htmlCodeTextarea.value = result.htmlCode || "";
@@ -93,6 +95,8 @@
             break;
           }
         }
+        // zindexBoost 默认为 true
+        zindexBoostCheckbox.checked = result.zindexBoost !== false;
         updateSwitchLabel();
       }
     );
@@ -136,6 +140,8 @@
   for (var i = 0; i < timingRadios.length; i++) {
     timingRadios[i].addEventListener("change", saveConfig);
   }
+
+  zindexBoostCheckbox.addEventListener("change", saveConfig);
 
   saveBtn.addEventListener("click", function () {
     saveConfig();
