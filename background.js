@@ -5,7 +5,7 @@
  */
 
 // 当前扩展版本
-var CURRENT_VERSION = "1.0.0";
+var CURRENT_VERSION = "1.0.1";
 
 // GitHub 仓库 API 地址
 var RELEASES_API = "https://api.github.com/repos/diaoyunxi/html-injector/releases/latest";

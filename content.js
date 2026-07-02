@@ -54,25 +54,40 @@
 
       /**
        * 将 HTML 代码插入到指定的 head 元素中
+       * 关键：通过 innerHTML/DOMParser 插入的 <script> 标签不会执行，
+       * 必须使用 document.createElement('script') 显式创建才能触发加载和执行
        * @param {HTMLHeadElement} headEl - head 元素
        * @param {string} code - HTML 代码
        */
       function injectIntoHead(headEl, code) {
-        try {
-          // 使用 DOMParser 解析 HTML 代码
-          var parser = new DOMParser();
-          var doc = parser.parseFromString("<head>" + code + "</head>", "text/html");
-          var nodes = doc.head.childNodes;
-          // 逐个插入节点
-          for (var i = 0; i < nodes.length; i++) {
-            headEl.appendChild(nodes[i].cloneNode(true));
-          }
-        } catch (e) {
-          // 如果 DOMParser 不可用，回退到 innerHTML 方式
-          var temp = document.createElement("div");
-          temp.innerHTML = code;
-          while (temp.firstChild) {
-            headEl.appendChild(temp.firstChild);
+        // 用临时容器解析 HTML
+        var temp = document.createElement("div");
+        temp.innerHTML = code;
+
+        // 遍历所有子节点逐个插入
+        while (temp.firstChild) {
+          var node = temp.firstChild;
+
+          if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SCRIPT") {
+            // script 标签必须用 createElement 重新创建才会执行
+            var script = document.createElement("script");
+
+            // 复制所有属性（src、type、async、defer 等）
+            for (var i = 0; i < node.attributes.length; i++) {
+              var attr = node.attributes[i];
+              script.setAttribute(attr.name, attr.value);
+            }
+
+            // 如果有内联代码，设置 textContent
+            if (node.textContent) {
+              script.textContent = node.textContent;
+            }
+
+            headEl.appendChild(script);
+            temp.removeChild(node);
+          } else {
+            // 非 script 元素直接移动到 head
+            headEl.appendChild(node);
           }
         }
       }

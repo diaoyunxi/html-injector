@@ -19,7 +19,7 @@
   var timingRadios = document.getElementsByName("timing");
 
   // 当前扩展版本（与 manifest.json 保持一致）
-  var CURRENT_VERSION = "1.0.0";
+  var CURRENT_VERSION = "1.0.1";
 
   // 自动保存的防抖计时器
   var saveTimer = null;
