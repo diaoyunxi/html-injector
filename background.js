@@ -17,7 +17,9 @@
  * - dom_ready：页面加载完成时（tabs.onUpdated status=complete）
  */
 
-// GitHub 仓库 API 地址（统一常量）
+// GitHub 仓库 API 地址（统一常量）。
+// 注意：popup.js 中存在同名常量定义（popup 需独立发起更新检查请求，
+// 避免依赖 background 上下文）。两处必须保持同步；如需修改请同步更新 popup.js。
 var GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
 var RELEASES_API = GITHUB_REPO + "/releases/latest";
 
@@ -30,6 +32,7 @@ var cachedConfig = {
   htmlCode: "",
   injectTiming: "immediate",
   zindexBoost: true,
+  domainRules: "", // 域名规则：仅匹配的域名才注入，留空表示注入所有域名
 };
 
 // MutationObserver 定时器引用，用于清理
@@ -227,10 +230,10 @@ function observeWidgets(target) {
     subtree: true,
   });
 
-  // 15 秒后停止观察（大多数 widget 在此时间内完成初始化）
+  // 30 秒后停止观察（部分 widget 初始化较慢，延长时间以确保捕获动态创建的元素）
   var timerId = setTimeout(function () {
     zObserver.disconnect();
-  }, 15000);
+  }, 30000);
 
   // 返回 timerId 以便外部需要时清理
   return timerId;
@@ -262,10 +265,12 @@ function injectScriptNode(target, node) {
  * @param {string} code - 用户输入的 HTML 代码
  */
 function injectUserHtml(target, code) {
-  // 基础危险代码检测（仅警告，不阻止注入——因为功能本身即为任意注入）
-  var dangerous = /javascript\s*:|data:text\/html|on\w+\s*=/gi;
+  // 危险代码检测（仅警告，不阻止注入——因为功能本身即为任意注入）。
+  // 覆盖：javascript: 伪协议、data:text/html、事件处理属性（onXxx=）、
+  // 以及 svg/iframe/object/embed 等可执行脚本或加载外部资源的危险标签变体。
+  var dangerous = /javascript\s*:|data:text\/html|on\w+\s*=|<svg|<iframe|<object|<embed/gi;
   if (dangerous.test(code)) {
-    console.warn("[HTML注入器] 检测到潜在危险代码，请确认来源可信");
+    console.warn("[HTML注入器] 检测到潜在危险代码（含事件属性或危险标签），请确认来源可信");
   }
 
   var temp = document.createElement("div");
@@ -314,10 +319,13 @@ function clearInjectionMark(tabId) {
       window.__HTML_INJECTOR_DONE__ = false;
     },
   }).catch(function (err) {
-    // 特殊页面（chrome:// 等）无法注入，静默忽略
-    if (err && err.message && err.message.indexOf("Cannot access") < 0) {
-      console.error("[HTML注入器] 清除注入标记失败:", err && err.message);
+    // 特殊页面（chrome:// 等）无法注入，检查已知关键词后静默忽略
+    var msg = (err && err.message) || "";
+    var ignorable = ["Cannot access", "Cannot inject"];
+    for (var i = 0; i < ignorable.length; i++) {
+      if (msg.indexOf(ignorable[i]) >= 0) return;
     }
+    console.error("[HTML注入器] 清除注入标记失败:", msg);
   });
 }
 
@@ -336,11 +344,13 @@ function injectHtml(tabId, htmlCode, zindexBoost) {
     func: mainWorldInject,
     args: [htmlCode, zindexBoost],
   }).catch(function (err) {
-    // 特殊页面（chrome:// 等）无法注入，静默忽略
-    if (err && err.message && err.message.indexOf("Cannot access") >= 0) {
-      return;
+    // 特殊页面（chrome:// 等）无法注入，检查已知关键词后静默忽略
+    var msg = (err && err.message) || "";
+    var ignorable = ["Cannot access", "Cannot inject"];
+    for (var i = 0; i < ignorable.length; i++) {
+      if (msg.indexOf(ignorable[i]) >= 0) return;
     }
-    console.error("[HTML注入器] 注入失败:", err && err.message);
+    console.error("[HTML注入器] 注入失败:", msg);
   });
 }
 
@@ -360,7 +370,7 @@ function initConfig() {
 
   // 预加载配置到内存缓存
   chrome.storage.local.get(
-    ["enabled", "htmlCode", "injectTiming", "zindexBoost"],
+    ["enabled", "htmlCode", "injectTiming", "zindexBoost", "domainRules"],
     function (result) {
       if (chrome.runtime.lastError) {
         console.error("[HTML注入器] 初始化读取配置失败:", chrome.runtime.lastError.message);
@@ -370,8 +380,58 @@ function initConfig() {
       cachedConfig.htmlCode = result.htmlCode || "";
       cachedConfig.injectTiming = result.injectTiming || "immediate";
       cachedConfig.zindexBoost = result.zindexBoost !== false;
+      cachedConfig.domainRules = result.domainRules || "";
     }
   );
+}
+
+/**
+ * 域名匹配：检查页面 URL 的域名是否在规则列表中
+ * 支持通配符匹配，如 *.example.com 匹配所有子域
+ * @param {string} tabUrl - 标签页 URL
+ * @param {string} domainRulesText - 域名规则文本（每行一条规则）
+ * @returns {boolean} 规则为空时返回 true（注入所有域名）；否则仅匹配的域名返回 true
+ */
+function isDomainAllowed(tabUrl, domainRulesText) {
+  // 规则为空时，注入所有域名
+  if (!domainRulesText || !domainRulesText.trim()) {
+    return true;
+  }
+
+  // 从 URL 中提取主机名
+  var hostname = "";
+  try {
+    hostname = new URL(tabUrl).hostname;
+  } catch (e) {
+    console.warn("[HTML注入器] 无法解析 URL 主机名:", tabUrl);
+    return false;
+  }
+  if (!hostname) return false;
+
+  // 逐行解析规则，支持通配符
+  var rules = domainRulesText.split("\n");
+  for (var i = 0; i < rules.length; i++) {
+    var rule = rules[i].trim();
+    if (!rule) continue;
+
+    // 移除可能的协议前缀
+    rule = rule.replace(/^https?:\/\//, "");
+
+    if (rule.indexOf("*.") === 0) {
+      // 通配符规则：*.example.com 匹配 sub.example.com 和 example.com
+      var baseDomain = rule.slice(2); // 去掉 *.
+      if (hostname === baseDomain || hostname.endsWith("." + baseDomain)) {
+        return true;
+      }
+    } else {
+      // 精确匹配
+      if (hostname === rule) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -389,9 +449,15 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   var htmlCode = cachedConfig.htmlCode;
   var timing = cachedConfig.injectTiming;
   var boost = cachedConfig.zindexBoost;
+  var domainRules = cachedConfig.domainRules;
 
   // 未启用或无代码则退出
   if (!enabled || !htmlCode) return;
+
+  // 域名规则过滤：仅匹配的域名才注入
+  if (!isDomainAllowed(tab.url, domainRules)) {
+    return;
+  }
 
   // 根据注入时机判断是否应该注入
   if (timing === "immediate") {
@@ -432,8 +498,11 @@ chrome.storage.onChanged.addListener(function (changes, areaName) {
   if (changes.zindexBoost !== undefined) {
     cachedConfig.zindexBoost = changes.zindexBoost.newValue !== false;
   }
+  if (changes.domainRules !== undefined) {
+    cachedConfig.domainRules = changes.domainRules.newValue || "";
+  }
 
-  if (changes.enabled || changes.htmlCode || changes.zindexBoost) {
+  if (changes.enabled || changes.htmlCode || changes.zindexBoost || changes.domainRules) {
     // 代码或开关变更时，清除当前页面的防重复注入标记，使注入可重新生效
     if (changes.htmlCode) {
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -454,7 +523,8 @@ chrome.storage.onChanged.addListener(function (changes, areaName) {
           return;
         }
         if (tabs[0] && tabs[0].url &&
-            (tabs[0].url.startsWith("http://") || tabs[0].url.startsWith("https://"))) {
+            (tabs[0].url.startsWith("http://") || tabs[0].url.startsWith("https://")) &&
+            isDomainAllowed(tabs[0].url, cachedConfig.domainRules)) {
           injectHtml(tabs[0].id, cachedConfig.htmlCode, cachedConfig.zindexBoost);
         }
       });

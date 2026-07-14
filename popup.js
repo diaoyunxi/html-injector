@@ -18,6 +18,10 @@
   var updateLink = document.getElementById("updateLink");
   var timingRadios = document.getElementsByName("timing");
   var zindexBoostCheckbox = document.getElementById("zindexBoost");
+  var domainRulesTextarea = document.getElementById("domainRules");
+  var exportBtn = document.getElementById("exportBtn");
+  var importBtn = document.getElementById("importBtn");
+  var importFile = document.getElementById("importFile");
 
   // DOM 元素空值防御：如果关键元素不存在，提前终止
   if (!enabledToggle || !switchLabel || !htmlCodeTextarea || !saveStatus ||
@@ -25,6 +29,10 @@
       !timingRadios || !zindexBoostCheckbox) {
     console.error("[HTML注入器] DOM 元素缺失，弹窗初始化失败");
     return;
+  }
+  // domainRules 为可选功能，缺失时降级处理
+  if (!domainRulesTextarea) {
+    console.warn("[HTML注入器] domainRules 元素缺失，域名规则功能将不可用");
   }
 
   // 从 manifest.json 统一获取版本号
@@ -39,6 +47,9 @@
   }
 
   // GitHub API 地址（统一常量）
+  // 注意：此处与 background.js 中的 GITHUB_REPO 存在重复定义。
+  // 原因：popup 需要独立发起更新检查请求，不能依赖 background service worker 的上下文
+  // （service worker 可能处于休眠状态）。两处定义必须保持同步，修改时请一并更新。
   var GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
   var RELEASES_API = GITHUB_REPO + "/releases/latest";
 
@@ -114,13 +125,20 @@
       }
     }
 
+    var config = {
+      enabled: enabled,
+      htmlCode: code,
+      injectTiming: timing,
+      zindexBoost: zindexBoostCheckbox.checked,
+    };
+
+    // 域名规则为可选功能，元素存在时才保存
+    if (domainRulesTextarea) {
+      config.domainRules = domainRulesTextarea.value;
+    }
+
     chrome.storage.local.set(
-      {
-        enabled: enabled,
-        htmlCode: code,
-        injectTiming: timing,
-        zindexBoost: zindexBoostCheckbox.checked,
-      },
+      config,
       function () {
         if (chrome.runtime.lastError) {
           console.error("[HTML注入器] 保存配置失败:", chrome.runtime.lastError.message);
@@ -152,7 +170,7 @@
    */
   function loadConfig() {
     chrome.storage.local.get(
-      ["enabled", "htmlCode", "injectTiming", "zindexBoost"],
+      ["enabled", "htmlCode", "injectTiming", "zindexBoost", "domainRules"],
       function (result) {
         if (chrome.runtime.lastError) {
           console.error("[HTML注入器] 读取配置失败:", chrome.runtime.lastError.message);
@@ -169,6 +187,10 @@
         }
         // zindexBoost 默认为 true
         zindexBoostCheckbox.checked = result.zindexBoost !== false;
+        // 域名规则为可选功能
+        if (domainRulesTextarea) {
+          domainRulesTextarea.value = result.domainRules || "";
+        }
         updateSwitchLabel();
       }
     );
@@ -201,6 +223,93 @@
       });
   }
 
+  /**
+   * 导出配置为 JSON 文件
+   * 将当前所有配置项打包为 JSON 格式，触发浏览器下载
+   */
+  function exportConfig() {
+    chrome.storage.local.get(
+      ["enabled", "htmlCode", "injectTiming", "zindexBoost", "domainRules"],
+      function (result) {
+        if (chrome.runtime.lastError) {
+          console.error("[HTML注入器] 读取配置用于导出失败:", chrome.runtime.lastError.message);
+          showSaveStatus("导出失败");
+          return;
+        }
+        // 构建导出数据，附带版本号便于后续兼容性处理
+        var exportData = {
+          _format: "html-injector-config",
+          _version: CURRENT_VERSION,
+          _exportTime: new Date().toISOString(),
+          enabled: result.enabled || false,
+          htmlCode: result.htmlCode || "",
+          injectTiming: result.injectTiming || "immediate",
+          zindexBoost: result.zindexBoost !== false,
+          domainRules: result.domainRules || "",
+        };
+        var jsonStr = JSON.stringify(exportData, null, 2);
+        var blob = new Blob([jsonStr], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "html-injector-config.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showSaveStatus("配置已导出");
+      }
+    );
+  }
+
+  /**
+   * 导入配置从 JSON 文件
+   * 读取用户选择的 JSON 文件，校验格式后写入 chrome.storage.local
+   * @param {File} file - 用户选择的文件对象
+   */
+  function importConfig(file) {
+    if (!file) {
+      console.warn("[HTML注入器] 未选择文件");
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        var data = JSON.parse(e.target.result);
+        // 校验导入数据的合法性
+        if (typeof data !== "object" || data === null) {
+          throw new Error("配置文件格式不正确：非有效 JSON 对象");
+        }
+        // 构建待保存的配置（只导入已知字段，忽略未知字段）
+        var config = {};
+        if (typeof data.enabled === "boolean") config.enabled = data.enabled;
+        if (typeof data.htmlCode === "string") config.htmlCode = data.htmlCode;
+        if (typeof data.injectTiming === "string") config.injectTiming = data.injectTiming;
+        if (typeof data.zindexBoost === "boolean") config.zindexBoost = data.zindexBoost;
+        if (typeof data.domainRules === "string") config.domainRules = data.domainRules;
+
+        chrome.storage.local.set(config, function () {
+          if (chrome.runtime.lastError) {
+            console.error("[HTML注入器] 导入配置写入失败:", chrome.runtime.lastError.message);
+            showSaveStatus("导入失败");
+            return;
+          }
+          // 重新加载 UI 以反映导入的配置
+          loadConfig();
+          showSaveStatus("配置已导入");
+        });
+      } catch (err) {
+        console.error("[HTML注入器] 解析配置文件失败:", err && err.message);
+        showSaveStatus("导入失败：文件格式错误");
+      }
+    };
+    reader.onerror = function () {
+      console.error("[HTML注入器] 读取文件失败");
+      showSaveStatus("导入失败：读取文件错误");
+    };
+    reader.readAsText(file);
+  }
+
   // 事件监听
   enabledToggle.addEventListener("change", function () {
     updateSwitchLabel();
@@ -214,6 +323,36 @@
   }
 
   zindexBoostCheckbox.addEventListener("change", saveConfig);
+
+  // 域名规则输入：自动保存
+  if (domainRulesTextarea) {
+    domainRulesTextarea.addEventListener("input", debouncedSave);
+  }
+
+  // 导出配置按钮
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportConfig);
+  }
+
+  // 导入配置按钮：触发隐藏的文件选择框
+  if (importBtn) {
+    importBtn.addEventListener("click", function () {
+      if (importFile) {
+        importFile.click();
+      }
+    });
+  }
+
+  // 文件选择变化：读取并导入配置
+  if (importFile) {
+    importFile.addEventListener("change", function () {
+      if (importFile.files && importFile.files[0]) {
+        importConfig(importFile.files[0]);
+        // 重置 input 以便重复导入同一文件
+        importFile.value = "";
+      }
+    });
+  }
 
   saveBtn.addEventListener("click", function () {
     saveConfig();

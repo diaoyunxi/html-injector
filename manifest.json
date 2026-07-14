@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "HTML 注入器",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "在网页 head 中插入自定义 HTML 代码，支持全局开关和持久存储，无需在每个网站重新配置",
   "permissions": ["storage", "notifications", "scripting", "tabs", "declarativeNetRequest"],
   "host_permissions": ["<all_urls>"],

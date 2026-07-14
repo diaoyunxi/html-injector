@@ -63,15 +63,28 @@
       </div>
     </div>
 
-    <!-- 危险功能警告 -->
+    <!-- 域名规则（按域名配置注入） -->
+    <div class="option-section">
+      <label class="section-title" for="domainRules">域名规则（可选）</label>
+      <textarea id="domainRules" placeholder="仅对匹配的域名注入，每行一条规则，留空则注入所有域名。&#10;示例：&#10;example.com&#10;*.example.com（匹配所有子域）" rows="3"></textarea>
+    </div>
+
+    <!-- 危险功能安全警告 -->
     <div class="warning-notice">
-      <span>此扩展会将自定义 HTML/JS 代码注入到所有网页。请在信任的代码和环境中使用，避免注入来源不明的代码。</span>
+      <span>安全警告：此扩展会将自定义 HTML/JS 代码注入到所有网页，存在 XSS 风险。请勿注入来源不明的代码。注入含 <code>&lt;iframe&gt;</code>、<code>&lt;object&gt;</code>、<code>&lt;embed&gt;</code>、<code>&lt;svg&gt;</code>、<code>onload</code> 等事件属性或 <code>javascript:</code> 伪协议的代码可能触发恶意行为，请务必确认代码来源可信。</span>
     </div>
 
     <!-- 保存状态 -->
     <div class="status-row">
       <span class="save-status" id="saveStatus"></span>
       <button class="btn-save" id="saveBtn">手动保存</button>
+    </div>
+
+    <!-- 导入/导出配置（JSON 格式） -->
+    <div class="status-row">
+      <button class="btn-save" id="exportBtn">导出配置</button>
+      <button class="btn-save" id="importBtn">导入配置</button>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
     </div>
   </div>
   <script src="popup.js"></script>
