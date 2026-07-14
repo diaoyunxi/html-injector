@@ -19,11 +19,74 @@
   var timingRadios = document.getElementsByName("timing");
   var zindexBoostCheckbox = document.getElementById("zindexBoost");
 
-  // 当前扩展版本（与 manifest.json 保持一致）
-  var CURRENT_VERSION = "1.0.3";
+  // DOM 元素空值防御：如果关键元素不存在，提前终止
+  if (!enabledToggle || !switchLabel || !htmlCodeTextarea || !saveStatus ||
+      !saveBtn || !versionEl || !updateNotice || !updateLink ||
+      !timingRadios || !zindexBoostCheckbox) {
+    console.error("[HTML注入器] DOM 元素缺失，弹窗初始化失败");
+    return;
+  }
+
+  // 从 manifest.json 统一获取版本号
+  var CURRENT_VERSION = "0.0.0"; // 占位，实际在初始化时赋值
+  try {
+    var manifest = chrome.runtime.getManifest();
+    if (manifest && manifest.version) {
+      CURRENT_VERSION = manifest.version;
+    }
+  } catch (e) {
+    console.error("[HTML注入器] 读取 manifest 失败:", e && e.message);
+  }
+
+  // GitHub API 地址（统一常量）
+  var GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
+  var RELEASES_API = GITHUB_REPO + "/releases/latest";
 
   // 自动保存的防抖计时器
   var saveTimer = null;
+
+  /**
+   * 比较版本号（与 background.js 保持一致）
+   * @param {string} current - 当前版本号
+   * @param {string} latest - 远程版本号
+   * @returns {boolean} 如果 latest 比 current 更新则返回 true
+   */
+  function isNewerVersion(current, latest) {
+    var versionRegex = /^\d+(\.\d+)*$/;
+    if (!versionRegex.test(current) || !versionRegex.test(latest)) {
+      return false;
+    }
+    var cp = current.split(".").map(Number);
+    var lp = latest.split(".").map(Number);
+    var max = Math.max(cp.length, lp.length);
+    for (var i = 0; i < max; i++) {
+      var c = cp[i] || 0, l = lp[i] || 0;
+      if (l > c) return true;
+      if (l < c) return false;
+    }
+    return false;
+  }
+
+  /**
+   * 带超时的 fetch 封装
+   * @param {string} url - 请求地址
+   * @param {number} [timeout=8000] - 超时时间（毫秒）
+   * @returns {Promise<Response>}
+   */
+  function fetchWithTimeout(url, timeout) {
+    timeout = timeout || 8000;
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, timeout);
+    return fetch(url, { signal: controller.signal }).then(function (resp) {
+      clearTimeout(timeoutId);
+      return resp;
+    }).catch(function (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    });
+  }
 
   /**
    * 显示保存状态提示
@@ -59,17 +122,22 @@
         zindexBoost: zindexBoostCheckbox.checked,
       },
       function () {
+        if (chrome.runtime.lastError) {
+          console.error("[HTML注入器] 保存配置失败:", chrome.runtime.lastError.message);
+          showSaveStatus("保存失败");
+          return;
+        }
         showSaveStatus("已自动保存");
       }
     );
   }
 
   /**
-   * 防抖保存：输入时延迟保存
+   * 防抖保存：输入时延迟保存（缩短至 300ms，减少快速关闭 popup 时的丢失风险）
    */
   function debouncedSave() {
     if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveConfig, 500);
+    saveTimer = setTimeout(saveConfig, 300);
   }
 
   /**
@@ -86,6 +154,10 @@
     chrome.storage.local.get(
       ["enabled", "htmlCode", "injectTiming", "zindexBoost"],
       function (result) {
+        if (chrome.runtime.lastError) {
+          console.error("[HTML注入器] 读取配置失败:", chrome.runtime.lastError.message);
+          return;
+        }
         enabledToggle.checked = result.enabled || false;
         htmlCodeTextarea.value = result.htmlCode || "";
         var timing = result.injectTiming || "immediate";
@@ -104,11 +176,10 @@
 
   /**
    * 检查更新
-   * 从 GitHub Releases API 获取最新版本号
+   * 从 GitHub Releases API 获取最新版本号，使用 isNewerVersion 比较
    */
   function checkUpdate() {
-    var repoUrl = "https://api.github.com/repos/diaoyunxi/html-injector/releases/latest";
-    fetch(repoUrl)
+    fetchWithTimeout(RELEASES_API, 8000)
       .then(function (resp) {
         if (!resp.ok) return null;
         return resp.json();
@@ -116,16 +187,17 @@
       .then(function (data) {
         if (!data || !data.tag_name) return;
         var latestVersion = data.tag_name.replace(/^v/, "");
-        if (latestVersion !== CURRENT_VERSION) {
-          // 显示更新提示
+        // 使用 isNewerVersion 判断，而非简单的 !== 比较
+        if (isNewerVersion(CURRENT_VERSION, latestVersion)) {
           updateNotice.style.display = "block";
-          if (data.html_url) {
+          // 校验 html_url 的合法性，防止恶意 URL
+          if (data.html_url && /^https:\/\/github\.com\//.test(data.html_url)) {
             updateLink.href = data.html_url;
           }
         }
       })
-      .catch(function () {
-        // 网络错误，静默处理
+      .catch(function (err) {
+        console.error("[HTML注入器] 检查更新失败:", err && err.message);
       });
   }
 
@@ -146,6 +218,15 @@
   saveBtn.addEventListener("click", function () {
     saveConfig();
     showSaveStatus("已保存");
+  });
+
+  // popup 关闭前同步保存，防止快速关闭导致最后一次输入丢失
+  window.addEventListener("beforeunload", function () {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      saveConfig();
+    }
   });
 
   // 初始化

@@ -13,7 +13,30 @@
     },
     "condition": {
       "urlFilter": "*",
-      "resourceTypes": ["main_frame", "sub_frame"]
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": [
+        "alipay.com",
+        "wx.tenpay.com",
+        "pay.bilibili.com",
+        "cashier.alipay.com",
+        "security.alipay.com",
+        "epassport.jd.com",
+        "passport.jd.com",
+        "pay.qq.com",
+        "tenpay.com",
+        "bank.com",
+        "icbc.com.cn",
+        "ccb.com",
+        "boc.cn",
+        "abchina.com",
+        "bankcomm.com",
+        "spdb.com.cn",
+        "cmbchina.com",
+        "ceb.com",
+        "psbc.com",
+        "citibank.com.cn",
+        "hsbc.com.cn"
+      ]
     }
   }
 ]
