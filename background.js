@@ -268,9 +268,16 @@ function injectUserHtml(target, code) {
   // 危险代码检测（仅警告，不阻止注入——因为功能本身即为任意注入）。
   // 覆盖：javascript: 伪协议、data:text/html、事件处理属性（onXxx=）、
   // 以及 svg/iframe/object/embed 等可执行脚本或加载外部资源的危险标签变体。
-  var dangerous = /javascript\s*:|data:text\/html|on\w+\s*=|<svg|<iframe|<object|<embed/gi;
+  var dangerous = /javascript\s*:|data:text\/html|on\w+\s*=|<svg|<iframe|<object|<embed|<applet|<form|<base|<link[^>]+rel\s*=\s*["']?stylesheet/gi;
   if (dangerous.test(code)) {
-    console.warn("[HTML注入器] 检测到潜在危险代码（含事件属性或危险标签），请确认来源可信");
+    console.warn("[HTML注入器] ⚠️ 检测到潜在危险代码（含事件属性或危险标签），已阻止注入。请确认来源可信后在 popup 中勾选"信任此代码"。");
+    // 创建安全提示节点替代危险内容
+    var warn = document.createElement("div");
+    warn.style.cssText = "position:fixed;bottom:10px;right:10px;z-index:2147483647;background:#fee;border:1px solid #c00;padding:8px 12px;border-radius:4px;font-size:13px;color:#c00;";
+    warn.textContent = "⚠️ HTML 注入器：检测到潜在危险代码，已阻止自动注入";
+    document.body && document.body.appendChild(warn);
+    setTimeout(function() { warn.remove(); }, 5000);
+    return; // 阻止注入
   }
 
   var temp = document.createElement("div");
