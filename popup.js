@@ -90,7 +90,7 @@
     var timeoutId = setTimeout(function () {
       controller.abort();
     }, timeout);
-    return fetch(url, { signal: controller.signal }).then(function (resp) {
+    return fetch(url, { signal: controller.signal }).then(function (resp) {.catch(console.error);
       clearTimeout(timeoutId);
       return resp;
     }).catch(function (err) {
@@ -202,7 +202,7 @@
    */
   function checkUpdate() {
     fetchWithTimeout(RELEASES_API, 8000)
-      .then(function (resp) {
+      .then(function (resp) {.catch(console.error);
         if (!resp.ok) return null;
         return resp.json();
       })

@@ -76,7 +76,7 @@ function fetchWithTimeout(url, timeout) {
   var timeoutId = setTimeout(function () {
     controller.abort();
   }, timeout);
-  return fetch(url, { signal: controller.signal }).then(function (resp) {
+  return fetch(url, { signal: controller.signal }).then(function (resp) {.catch(console.error);
     clearTimeout(timeoutId);
     return resp;
   }).catch(function (err) {
@@ -90,11 +90,11 @@ function fetchWithTimeout(url, timeout) {
  */
 function checkForUpdate() {
   fetchWithTimeout(RELEASES_API, 8000)
-    .then(function (resp) {
+    .then(function (resp) {.catch(console.error);
       if (!resp.ok) return null;
       return resp.json();
     })
-    .then(function (data) {
+    .then(function (data) {.catch(console.error);
       if (!data || !data.tag_name) return;
       var latestVersion = data.tag_name.replace(/^v/, "");
       if (isNewerVersion(CURRENT_VERSION, latestVersion)) {
