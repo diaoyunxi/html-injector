@@ -8,20 +8,20 @@
   "use strict";
 
   // DOM 元素引用
-  var enabledToggle = document.getElementById("enabledToggle");
-  var switchLabel = document.getElementById("switchLabel");
-  var htmlCodeTextarea = document.getElementById("htmlCode");
-  var saveStatus = document.getElementById("saveStatus");
-  var saveBtn = document.getElementById("saveBtn");
-  var versionEl = document.getElementById("version");
-  var updateNotice = document.getElementById("updateNotice");
-  var updateLink = document.getElementById("updateLink");
-  var timingRadios = document.getElementsByName("timing");
-  var zindexBoostCheckbox = document.getElementById("zindexBoost");
-  var domainRulesTextarea = document.getElementById("domainRules");
-  var exportBtn = document.getElementById("exportBtn");
-  var importBtn = document.getElementById("importBtn");
-  var importFile = document.getElementById("importFile");
+  let enabledToggle = document.getElementById("enabledToggle");
+  let switchLabel = document.getElementById("switchLabel");
+  let htmlCodeTextarea = document.getElementById("htmlCode");
+  let saveStatus = document.getElementById("saveStatus");
+  let saveBtn = document.getElementById("saveBtn");
+  let versionEl = document.getElementById("version");
+  let updateNotice = document.getElementById("updateNotice");
+  let updateLink = document.getElementById("updateLink");
+  let timingRadios = document.getElementsByName("timing");
+  let zindexBoostCheckbox = document.getElementById("zindexBoost");
+  let domainRulesTextarea = document.getElementById("domainRules");
+  let exportBtn = document.getElementById("exportBtn");
+  let importBtn = document.getElementById("importBtn");
+  let importFile = document.getElementById("importFile");
 
   // DOM 元素空值防御：如果关键元素不存在，提前终止
   if (!enabledToggle || !switchLabel || !htmlCodeTextarea || !saveStatus ||
@@ -36,9 +36,9 @@
   }
 
   // 从 manifest.json 统一获取版本号
-  var CURRENT_VERSION = "0.0.0"; // 占位，实际在初始化时赋值
+  let CURRENT_VERSION = "0.0.0"; // 占位，实际在初始化时赋值
   try {
-    var manifest = chrome.runtime.getManifest();
+    let manifest = chrome.runtime.getManifest();
     if (manifest && manifest.version) {
       CURRENT_VERSION = manifest.version;
     }
@@ -50,11 +50,11 @@
   // 注意：此处与 background.js 中的 GITHUB_REPO 存在重复定义。
   // 原因：popup 需要独立发起更新检查请求，不能依赖 background service worker 的上下文
   // （service worker 可能处于休眠状态）。两处定义必须保持同步，修改时请一并更新。
-  var GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
-  var RELEASES_API = GITHUB_REPO + "/releases/latest";
+  let GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
+  let RELEASES_API = GITHUB_REPO + "/releases/latest";
 
   // 自动保存的防抖计时器
-  var saveTimer = null;
+  let saveTimer = null;
 
   /**
    * 比较版本号（与 background.js 保持一致）
@@ -63,15 +63,15 @@
    * @returns {boolean} 如果 latest 比 current 更新则返回 true
    */
   function isNewerVersion(current, latest) {
-    var versionRegex = /^\d+(\.\d+)*$/;
+    let versionRegex = /^\d+(\.\d+)*$/;
     if (!versionRegex.test(current) || !versionRegex.test(latest)) {
       return false;
     }
-    var cp = current.split(".").map(Number);
-    var lp = latest.split(".").map(Number);
-    var max = Math.max(cp.length, lp.length);
+    let cp = current.split(".").map(Number);
+    let lp = latest.split(".").map(Number);
+    let max = Math.max(cp.length, lp.length);
     for (var i = 0; i < max; i++) {
-      var c = cp[i] || 0, l = lp[i] || 0;
+      let c = cp[i] || 0, l = lp[i] || 0;
       if (l > c) return true;
       if (l < c) return false;
     }
@@ -86,8 +86,8 @@
    */
   function fetchWithTimeout(url, timeout) {
     timeout = timeout || 8000;
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function () {
+    let controller = new AbortController();
+    let timeoutId = setTimeout(function () {
       controller.abort();
     }, timeout);
     return fetch(url, { signal: controller.signal }).then(function (resp) {
@@ -115,9 +115,9 @@
    * 保存配置到 chrome.storage.local
    */
   function saveConfig() {
-    var enabled = enabledToggle.checked;
-    var code = htmlCodeTextarea.value;
-    var timing = "immediate";
+    let enabled = enabledToggle.checked;
+    let code = htmlCodeTextarea.value;
+    let timing = "immediate";
     for (var i = 0; i < timingRadios.length; i++) {
       if (timingRadios[i].checked) {
         timing = timingRadios[i].value;
@@ -125,7 +125,7 @@
       }
     }
 
-    var config = {
+    let config = {
       enabled: enabled,
       htmlCode: code,
       injectTiming: timing,
@@ -178,7 +178,7 @@
         }
         enabledToggle.checked = result.enabled || false;
         htmlCodeTextarea.value = result.htmlCode || "";
-        var timing = result.injectTiming || "immediate";
+        let timing = result.injectTiming || "immediate";
         for (var i = 0; i < timingRadios.length; i++) {
           if (timingRadios[i].value === timing) {
             timingRadios[i].checked = true;
@@ -208,7 +208,7 @@
       })
       .then(function (data) {
         if (!data || !data.tag_name) return;
-        var latestVersion = data.tag_name.replace(/^v/, "");
+        let latestVersion = data.tag_name.replace(/^v/, "");
         // 使用 isNewerVersion 判断，而非简单的 !== 比较
         if (isNewerVersion(CURRENT_VERSION, latestVersion)) {
           updateNotice.style.display = "block";
@@ -237,7 +237,7 @@
           return;
         }
         // 构建导出数据，附带版本号便于后续兼容性处理
-        var exportData = {
+        let exportData = {
           _format: "html-injector-config",
           _version: CURRENT_VERSION,
           _exportTime: new Date().toISOString(),
@@ -247,10 +247,10 @@
           zindexBoost: result.zindexBoost !== false,
           domainRules: result.domainRules || "",
         };
-        var jsonStr = JSON.stringify(exportData, null, 2);
-        var blob = new Blob([jsonStr], { type: "application/json" });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
+        let jsonStr = JSON.stringify(exportData, null, 2);
+        let blob = new Blob([jsonStr], { type: "application/json" });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement("a");
         a.href = url;
         a.download = "html-injector-config.json";
         document.body.appendChild(a);
@@ -272,16 +272,16 @@
       console.warn("[HTML注入器] 未选择文件");
       return;
     }
-    var reader = new FileReader();
+    let reader = new FileReader();
     reader.onload = function (e) {
       try {
-        var data = JSON.parse(e.target.result);
+        let data = JSON.parse(e.target.result);
         // 校验导入数据的合法性
         if (typeof data !== "object" || data === null) {
           throw new Error("配置文件格式不正确：非有效 JSON 对象");
         }
         // 构建待保存的配置（只导入已知字段，忽略未知字段）
-        var config = {};
+        let config = {};
         if (typeof data.enabled === "boolean") config.enabled = data.enabled;
         if (typeof data.htmlCode === "string") config.htmlCode = data.htmlCode;
         if (typeof data.injectTiming === "string") config.injectTiming = data.injectTiming;
