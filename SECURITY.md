@@ -1,33 +1,48 @@
-# 安全策略
+# Security Policy
 
-## 报告安全漏洞
+## Supported Versions
 
-如果你发现了安全漏洞，请通过以下方式报告：
+| Version | Supported          |
+| ------- | ------------------ |
+| Latest  | :white_check_mark: |
 
-1. **请勿**在公开的 GitHub Issue 中报告安全漏洞
-2. 请通过 GitHub 的 [Security Advisories](https://github.com/diaoyunxi/html-injector/security/advisories/new) 页面提交报告
-3. 或直接联系仓库维护者
+## Reporting a Vulnerability
 
-## 报告内容
+We take security vulnerabilities seriously. If you discover a security issue, please report it responsibly.
 
-请在报告中包含：
+### How to Report
 
-- 漏洞类型（XSS、CSRF、代码注入等）
-- 受影响的功能和文件
-- 复现步骤（PoC）
-- 潜在影响评估
+1. **Do NOT open a public issue** for security vulnerabilities
+2. Email the maintainer directly, or use GitHub's [private vulnerability reporting](https://github.com/diaoyunxi/) feature
+3. Include a detailed description of the vulnerability
+4. Provide steps to reproduce the issue if possible
 
-## 响应时间
+### What to Expect
 
-- 确认收到：2 个工作日内
-- 初步评估：5 个工作日内
-- 修复发布：根据严重程度，1-14 个工作日内
+- **Acknowledgment**: We will acknowledge receipt within 48 hours
+- **Assessment**: We will assess the severity and impact within 7 days
+- **Resolution**: We aim to release a fix within 30 days for critical issues
+- **Disclosure**: We follow responsible disclosure — public announcement after a fix is available
 
-## 安全范围
+### Scope
 
-以下属于本项目的安全关注点：
+The following are considered in scope:
+- Code execution vulnerabilities
+- Authentication/authorization bypasses
+- Data exposure or injection attacks
+- Denial of service vectors
 
-- HTML 代码注入检测绕过
-- CSP（Content Security Policy）绕过
-- Chrome 扩展权限滥用
-- 恶意代码通过注入检测逃逸
+### Out of Scope
+
+- Issues in third-party dependencies (report to the upstream project)
+- Social engineering attacks
+- Issues requiring physical access
+
+## Security Best Practices for Users
+
+- Always run the latest version
+- Never expose services to the public internet without proper authentication
+- Use environment variables for sensitive configuration
+- Review access logs regularly
+
+Thank you for helping keep this project secure!
