@@ -565,8 +565,17 @@ chrome.notifications.onClicked.addListener(function (notificationId) {
 chrome.runtime.onInstalled.addListener(function () {
   initConfig();
   checkForUpdate();
+  // 每 6 小时自动检查更新（MV3 Service Worker 会被挂起，需用 alarms 定时）
+  chrome.alarms.create("html-injector-update-check", { periodInMinutes: 360 });
 });
 chrome.runtime.onStartup.addListener(function () {
   initConfig();
   checkForUpdate();
+});
+
+// 定时闹钟触发更新检查
+chrome.alarms.onAlarm.addListener(function (alarm) {
+  if (alarm.name === "html-injector-update-check") {
+    checkForUpdate();
+  }
 });
