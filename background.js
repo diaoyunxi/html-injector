@@ -266,10 +266,25 @@ function injectScriptNode(target, node) {
  */
 function injectUserHtml(target, code) {
   // 危险代码检测（仅警告，不阻止注入——因为功能本身即为任意注入）。
-  // 覆盖：javascript: 伪协议、data:text/html、事件处理属性（onXxx=）、
+  // 覆盖：javascript: 伪协议、data: URI、事件处理属性（onXxx=）、
   // 以及 svg/iframe/object/embed 等可执行脚本或加载外部资源的危险标签变体。
-  var dangerous = /javascript\s*:|data:text\/html|on\w+\s*=|<svg|<iframe|<object|<embed/gi;
-  if (dangerous.test(code)) {
+  //
+  // 防御编码绕过：先对 HTML 做轻量级规范化，再匹配危险模式。
+  // 1. 将 HTML 十进制实体（&#NNN;）和十六进制实体（&#xHH;）解码为字符
+  // 2. 移除属性值中嵌入的制表符/换行符（可被用于拆分 "javascript:" 等关键字）
+  // 3. 使用更宽松的正则匹配，允许关键字内部出现空白字符
+  var normalized = code
+    .replace(/&#x([0-9a-fA-F]+);/g, function (_, hex) {
+      return String.fromCharCode(parseInt(hex, 16));
+    })
+    .replace(/&#(\d+);/g, function (_, dec) {
+      return String.fromCharCode(parseInt(dec, 10));
+    })
+    .replace(/[\t\n\r]/g, "");
+  var dangerous = /j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:|data\s*:/i;
+  var dangerousTags = /<\s*(svg|iframe|object|embed)\b/i;
+  var dangerousAttrs = /\bon\w+\s*=/i;
+  if (dangerous.test(normalized) || dangerousTags.test(code) || dangerousAttrs.test(code)) {
     console.warn("[HTML注入器] 检测到潜在危险代码（含事件属性或危险标签），请确认来源可信");
   }
 
