@@ -20,14 +20,14 @@
 // GitHub 仓库 API 地址（统一常量）。
 // 注意：popup.js 中存在同名常量定义（popup 需独立发起更新检查请求，
 // 避免依赖 background 上下文）。两处必须保持同步；如需修改请同步更新 popup.js。
-var GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
-var RELEASES_API = GITHUB_REPO + "/releases/latest";
+const GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
+const RELEASES_API = GITHUB_REPO + "/releases/latest";
 
 // 从 manifest.json 统一获取版本号
-var CURRENT_VERSION = "0.0.0"; // 占位，实际在 initConfig 中赋值
+let CURRENT_VERSION = "0.0.0"; // 占位，实际在 initConfig 中赋值
 
 // 内存配置缓存，避免每次 tabs.onUpdated 都读取 storage
-var cachedConfig = {
+const cachedConfig = {
   enabled: false,
   htmlCode: "",
   injectTiming: "immediate",
@@ -36,7 +36,7 @@ var cachedConfig = {
 };
 
 // MutationObserver 定时器引用，用于清理
-var observerTimerId = null;
+let observerTimerId = null;
 
 /**
  * 比较版本号（支持语义化版本格式 x.y.z）
@@ -46,18 +46,18 @@ var observerTimerId = null;
  */
 function isNewerVersion(current, latest) {
   // 校验版本号格式：必须是纯数字版本号，如 "1.0.3"、"2.1"
-  var versionRegex = /^\d+(\.\d+)*$/;
+  const versionRegex = /^\d+(\.\d+)*$/;
   if (!versionRegex.test(current) || !versionRegex.test(latest)) {
     console.warn("[HTML注入器] 版本号格式非法，current=" + current + ", latest=" + latest);
     return false;
   }
 
-  var currentParts = current.split(".").map(Number);
-  var latestParts = latest.split(".").map(Number);
-  var maxLen = Math.max(currentParts.length, latestParts.length);
-  for (var i = 0; i < maxLen; i++) {
-    var c = currentParts[i] || 0;
-    var l = latestParts[i] || 0;
+  const currentParts = current.split(".").map(Number);
+  const latestParts = latest.split(".").map(Number);
+  const maxLen = Math.max(currentParts.length, latestParts.length);
+  for (let i = 0; i < maxLen; i++) {
+    const c = currentParts[i] || 0;
+    const l = latestParts[i] || 0;
     if (l > c) return true;
     if (l < c) return false;
   }
@@ -72,8 +72,8 @@ function isNewerVersion(current, latest) {
  */
 function fetchWithTimeout(url, timeout) {
   timeout = timeout || 8000;
-  var controller = new AbortController();
-  var timeoutId = setTimeout(function () {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function () {
     controller.abort();
   }, timeout);
   return fetch(url, { signal: controller.signal }).then(function (resp) {
@@ -96,7 +96,7 @@ function checkForUpdate() {
     })
     .then(function (data) {
       if (!data || !data.tag_name) return;
-      var latestVersion = data.tag_name.replace(/^v/, "");
+      const latestVersion = data.tag_name.replace(/^v/, "");
       if (isNewerVersion(CURRENT_VERSION, latestVersion)) {
         chrome.notifications.create({
           type: "basic",
@@ -124,7 +124,7 @@ function checkForUpdate() {
  * @param {Element} target - 注入目标（head 或 documentElement）
  */
 function injectZindexCSS(target) {
-  var boostStyle = document.createElement("style");
+  const boostStyle = document.createElement("style");
   boostStyle.id = "__html_injector_zindex_boost__";
   boostStyle.textContent = [
     "/* HTML 注入器 - 置顶显示 */",
@@ -152,10 +152,10 @@ function injectZindexCSS(target) {
  * @returns {boolean}
  */
 function isWidgetLike(el) {
-  var id = (el.id || "").toLowerCase();
-  var cls = (el.className || "").toString().toLowerCase();
-  var keywords = ["waifu", "live2d", "l2d", "widget", "kanban"];
-  for (var k = 0; k < keywords.length; k++) {
+  const id = (el.id || "").toLowerCase();
+  const cls = (el.className || "").toString().toLowerCase();
+  const keywords = ["waifu", "live2d", "l2d", "widget", "kanban"];
+  for (let k = 0; k < keywords.length; k++) {
     if (id.indexOf(keywords[k]) >= 0 || cls.indexOf(keywords[k]) >= 0) {
       return true;
     }
@@ -164,13 +164,13 @@ function isWidgetLike(el) {
   if (el.tagName === "CANVAS") return true;
   // 包含 canvas 的固定/绝对定位 div
   if (el.tagName === "DIV") {
-    var style = el.style;
+    const style = el.style;
     // 快速预筛：先检查内联 style，避免触发 getComputedStyle 重排
     if (style.position === "fixed" || style.position === "absolute") {
       if (el.querySelector("canvas")) return true;
     } else {
       // 内联样式未设置时才回退到 getComputedStyle
-      var computed = window.getComputedStyle(el);
+      const computed = window.getComputedStyle(el);
       if ((computed.position === "fixed" || computed.position === "absolute") &&
           el.querySelector("canvas")) {
         return true;
@@ -190,9 +190,9 @@ function boostNodeZindex(node) {
   }
   // 使用 TreeWalker 遍历子孙节点，避免 querySelectorAll 创建中间数组
   if (node.nodeType === 1) {
-    var walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT, {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (child) {
-        var tag = child.tagName;
+        const tag = child.tagName;
         if (tag === "DIV" || tag === "CANVAS" || tag === "IFRAME" || tag === "SPAN") {
           return NodeFilter.FILTER_ACCEPT;
         }
@@ -200,7 +200,7 @@ function boostNodeZindex(node) {
       }
     });
     while (walker.nextNode()) {
-      var child = walker.currentNode;
+      const child = walker.currentNode;
       if (isWidgetLike(child)) {
         child.style.setProperty("z-index", "2147483647", "important");
       }
@@ -213,12 +213,12 @@ function boostNodeZindex(node) {
  * @param {Element} target - 注入目标
  */
 function observeWidgets(target) {
-  var zObserver = new MutationObserver(function (mutations) {
-    for (var m = 0; m < mutations.length; m++) {
-      var mutation = mutations[m];
-      var addedNodes = mutation.addedNodes;
-      for (var n = 0; n < addedNodes.length; n++) {
-        var node = addedNodes[n];
+  const zObserver = new MutationObserver(function (mutations) {
+    for (let m = 0; m < mutations.length; m++) {
+      const mutation = mutations[m];
+      const addedNodes = mutation.addedNodes;
+      for (let n = 0; n < addedNodes.length; n++) {
+        const node = addedNodes[n];
         if (node.nodeType !== 1) continue;
         boostNodeZindex(node);
       }
@@ -231,7 +231,7 @@ function observeWidgets(target) {
   });
 
   // 30 秒后停止观察（部分 widget 初始化较慢，延长时间以确保捕获动态创建的元素）
-  var timerId = setTimeout(function () {
+  const timerId = setTimeout(function () {
     zObserver.disconnect();
   }, 30000);
 
@@ -246,10 +246,10 @@ function observeWidgets(target) {
  * @param {Element} node - script 节点
  */
 function injectScriptNode(target, node) {
-  var script = document.createElement("script");
+  const script = document.createElement("script");
   // 复制所有属性（src、type、async、defer、crossorigin 等）
-  for (var i = 0; i < node.attributes.length; i++) {
-    var attr = node.attributes[i];
+  for (let i = 0; i < node.attributes.length; i++) {
+    const attr = node.attributes[i];
     script.setAttribute(attr.name, attr.value);
   }
   // 如果有内联代码，设置 textContent
@@ -273,7 +273,7 @@ function injectUserHtml(target, code) {
   // 1. 将 HTML 十进制实体（&#NNN;）和十六进制实体（&#xHH;）解码为字符
   // 2. 移除属性值中嵌入的制表符/换行符（可被用于拆分 "javascript:" 等关键字）
   // 3. 使用更宽松的正则匹配，允许关键字内部出现空白字符
-  var normalized = code
+  const normalized = code
     .replace(/&#x([0-9a-fA-F]+);/g, function (_, hex) {
       return String.fromCharCode(parseInt(hex, 16));
     })
@@ -281,18 +281,18 @@ function injectUserHtml(target, code) {
       return String.fromCharCode(parseInt(dec, 10));
     })
     .replace(/[\t\n\r]/g, "");
-  var dangerous = /j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:|data\s*:/i;
-  var dangerousTags = /<\s*(svg|iframe|object|embed)\b/i;
-  var dangerousAttrs = /\bon\w+\s*=/i;
+  const dangerous = /j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:|data\s*:/i;
+  const dangerousTags = /<\s*(svg|iframe|object|embed)\b/i;
+  const dangerousAttrs = /\bon\w+\s*=/i;
   if (dangerous.test(normalized) || dangerousTags.test(code) || dangerousAttrs.test(code)) {
     console.warn("[HTML注入器] 检测到潜在危险代码（含事件属性或危险标签），请确认来源可信");
   }
 
-  var temp = document.createElement("div");
+  const temp = document.createElement("div");
   temp.innerHTML = code;
 
   while (temp.firstChild) {
-    var node = temp.firstChild;
+    const node = temp.firstChild;
     if (node.nodeType === 1 && node.tagName === "SCRIPT") {
       injectScriptNode(target, node);
       temp.removeChild(node);
@@ -312,7 +312,7 @@ function mainWorldInject(code, boostZindex) {
   if (window.__HTML_INJECTOR_DONE__) return;
   window.__HTML_INJECTOR_DONE__ = true;
 
-  var target = document.head || document.documentElement;
+  const target = document.head || document.documentElement;
 
   if (boostZindex) {
     injectZindexCSS(target);
@@ -335,9 +335,9 @@ function clearInjectionMark(tabId) {
     },
   }).catch(function (err) {
     // 特殊页面（chrome:// 等）无法注入，检查已知关键词后静默忽略
-    var msg = (err && err.message) || "";
-    var ignorable = ["Cannot access", "Cannot inject"];
-    for (var i = 0; i < ignorable.length; i++) {
+    const msg = (err && err.message) || "";
+    const ignorable = ["Cannot access", "Cannot inject"];
+    for (let i = 0; i < ignorable.length; i++) {
       if (msg.indexOf(ignorable[i]) >= 0) return;
     }
     console.error("[HTML注入器] 清除注入标记失败:", msg);
@@ -360,9 +360,9 @@ function injectHtml(tabId, htmlCode, zindexBoost) {
     args: [htmlCode, zindexBoost],
   }).catch(function (err) {
     // 特殊页面（chrome:// 等）无法注入，检查已知关键词后静默忽略
-    var msg = (err && err.message) || "";
-    var ignorable = ["Cannot access", "Cannot inject"];
-    for (var i = 0; i < ignorable.length; i++) {
+    const msg = (err && err.message) || "";
+    const ignorable = ["Cannot access", "Cannot inject"];
+    for (let i = 0; i < ignorable.length; i++) {
       if (msg.indexOf(ignorable[i]) >= 0) return;
     }
     console.error("[HTML注入器] 注入失败:", msg);
@@ -375,7 +375,7 @@ function injectHtml(tabId, htmlCode, zindexBoost) {
 function initConfig() {
   // 从 manifest.json 统一获取版本号
   try {
-    var manifest = chrome.runtime.getManifest();
+    const manifest = chrome.runtime.getManifest();
     if (manifest && manifest.version) {
       CURRENT_VERSION = manifest.version;
     }
@@ -414,7 +414,7 @@ function isDomainAllowed(tabUrl, domainRulesText) {
   }
 
   // 从 URL 中提取主机名
-  var hostname = "";
+  const hostname = "";
   try {
     hostname = new URL(tabUrl).hostname;
   } catch (e) {
@@ -424,9 +424,9 @@ function isDomainAllowed(tabUrl, domainRulesText) {
   if (!hostname) return false;
 
   // 逐行解析规则，支持通配符
-  var rules = domainRulesText.split("\n");
-  for (var i = 0; i < rules.length; i++) {
-    var rule = rules[i].trim();
+  const rules = domainRulesText.split("\n");
+  for (let i = 0; i < rules.length; i++) {
+    const rule = rules[i].trim();
     if (!rule) continue;
 
     // 移除可能的协议前缀
@@ -434,7 +434,7 @@ function isDomainAllowed(tabUrl, domainRulesText) {
 
     if (rule.indexOf("*.") === 0) {
       // 通配符规则：*.example.com 匹配 sub.example.com 和 example.com
-      var baseDomain = rule.slice(2); // 去掉 *.
+      const baseDomain = rule.slice(2); // 去掉 *.
       if (hostname === baseDomain || hostname.endsWith("." + baseDomain)) {
         return true;
       }
@@ -460,11 +460,11 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   }
 
   // 直接使用内存缓存，避免每次事件都读取 storage
-  var enabled = cachedConfig.enabled;
-  var htmlCode = cachedConfig.htmlCode;
-  var timing = cachedConfig.injectTiming;
-  var boost = cachedConfig.zindexBoost;
-  var domainRules = cachedConfig.domainRules;
+  const enabled = cachedConfig.enabled;
+  const htmlCode = cachedConfig.htmlCode;
+  const timing = cachedConfig.injectTiming;
+  const boost = cachedConfig.zindexBoost;
+  const domainRules = cachedConfig.domainRules;
 
   // 未启用或无代码则退出
   if (!enabled || !htmlCode) return;
