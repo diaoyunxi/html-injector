@@ -414,7 +414,10 @@ function isDomainAllowed(tabUrl, domainRulesText) {
   }
 
   // 从 URL 中提取主机名
-  const hostname = "";
+  // 注意：必须用 let——hostname 在 try 块中被重新赋值；若误用 const，
+  // 赋值会抛出 "Assignment to constant variable" 并被下面的 catch 吞掉，
+  // 导致 isDomainAllowed 在配置了域名规则时永远返回 false（注入被完全禁用）。
+  let hostname = "";
   try {
     hostname = new URL(tabUrl).hostname;
   } catch (e) {
