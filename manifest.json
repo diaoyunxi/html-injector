@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "HTML 注入器",
+  "name": "HTML \u6ce8\u5165\u5668",
   "version": "1.0.5",
-  "description": "在网页 head 中插入自定义 HTML 代码，支持全局开关和持久存储，无需在每个网站重新配置",
+  "description": "\u5728\u7f51\u9875 head \u4e2d\u63d2\u5165\u81ea\u5b9a\u4e49 HTML \u4ee3\u7801\uff0c\u652f\u6301\u5168\u5c40\u5f00\u5173\u548c\u6301\u4e45\u5b58\u50a8\uff0c\u65e0\u9700\u5728\u6bcf\u4e2a\u7f51\u7ad9\u91cd\u65b0\u914d\u7f6e",
   "permissions": [
     "storage",
     "notifications",
@@ -41,5 +41,6 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
-  }
+  },
+  "incognito": "split"
 }
