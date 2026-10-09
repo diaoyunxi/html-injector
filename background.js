@@ -426,7 +426,7 @@ function isDomainAllowed(tabUrl, domainRulesText) {
   // 逐行解析规则，支持通配符
   const rules = domainRulesText.split("\n");
   for (let i = 0; i < rules.length; i++) {
-    const rule = rules[i].trim();
+    let rule = rules[i].trim();
     if (!rule) continue;
 
     // 移除可能的协议前缀
