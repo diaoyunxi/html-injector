@@ -24,7 +24,7 @@ const GITHUB_REPO = "https://api.github.com/repos/diaoyunxi/html-injector";
 const RELEASES_API = GITHUB_REPO + "/releases/latest";
 
 // 从 manifest.json 统一获取版本号
-let CURRENT_VERSION = "0.0.0"; // 占位，实际在 initConfig 中赋值
+let CURRENT_VERSION = "1.0.5"; // 与 manifest.json 保持同步
 
 // 内存配置缓存，避免每次 tabs.onUpdated 都读取 storage
 const cachedConfig = {
