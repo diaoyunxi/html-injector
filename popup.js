@@ -36,7 +36,7 @@
   }
 
   // 从 manifest.json 统一获取版本号
-  let CURRENT_VERSION = "0.0.0"; // 占位，实际在初始化时赋值
+  let CURRENT_VERSION = "1.0.5"; // 与 manifest.json 保持同步
   try {
     const manifest = chrome.runtime.getManifest();
     if (manifest && manifest.version) {
