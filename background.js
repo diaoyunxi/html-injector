@@ -414,7 +414,7 @@ function isDomainAllowed(tabUrl, domainRulesText) {
   }
 
   // 从 URL 中提取主机名
-  const hostname = "";
+  let hostname = "";
   try {
     hostname = new URL(tabUrl).hostname;
   } catch (e) {
