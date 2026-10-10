@@ -289,7 +289,7 @@ function injectUserHtml(target, code) {
   }
 
   const temp = document.createElement("div");
-  temp.innerHTML = code;
+  temp.textContent = code;
 
   while (temp.firstChild) {
     const node = temp.firstChild;
