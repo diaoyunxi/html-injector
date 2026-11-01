@@ -83,6 +83,9 @@ html-injector/
 | v1.0.0 | 初始版本，使用 content_scripts + DOMParser |
 | v1.0.1 | 修复 script 标签不执行问题，改用 createElement |
 | v1.0.2 | 彻底修复：改用 chrome.scripting world:MAIN + declarativeNetRequest 移除 CSP |
+| v1.0.3 | 安全加固：innerHTML→textContent、var→let 现代化、危险代码检测增强 |
+| v1.0.4 | 修复 isDomainAllowed 域名白名单 const 重赋值 bug、添加 incognito split 模式 |
+| v1.0.5 | 同步版本号、injectUserHtml 改用 DOMParser 解析 HTML |
 
 ## 自动更新
 
